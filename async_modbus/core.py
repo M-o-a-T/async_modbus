@@ -35,8 +35,7 @@ async def send_message_tcp(adu, reader, writer):
     :param writer: an async stream writer (ex: asyncio.StreamWriter)
     :return: Parsed response from server.
     """
-    writer.write(adu)
-    await writer.drain()
+    await writer.write(adu)
 
     exception_adu_size = 9
     response_error_adu = await reader.readexactly(exception_adu_size)
@@ -60,8 +59,7 @@ async def send_message_rtu(adu, reader, writer):
     :param writer: an async stream writer (ex: asyncio.StreamWriter)
     :return: Parsed response from server.
     """
-    writer.write(adu)
-    await writer.drain()
+    await writer.write(adu)
 
     # Check exception ADU (which is shorter than all other responses) first.
     exception_adu_size = 5
@@ -102,22 +100,13 @@ class _Stream:
             self.readexactly = self.reader.readexactly
         else:
             self.readexactly = self.reader.read
-        if inspect.iscoroutinefunction(self.writer.write):
-            self._write_coro = None
-
-            def write(data):
-                self._write_coro = self.writer.write(data)
-
-            async def drain():
-                assert self._write_coro is not None
-                await self._write_coro
-                self._write_coro = None
-
-        else:
+        if not inspect.iscoroutinefunction(self.writer.write):
             write = self.writer.write
-            drain = self.writer.drain
+        else:
+            async def write(data):
+                self.writer.write(data)
+                await self.writer.drain()
         self.write = write
-        self.drain = drain
         self.close = self.writer.close
 
 
