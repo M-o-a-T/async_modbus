@@ -5,6 +5,7 @@
 # Copyright (c) 2020-2022 Tiago Coutinho
 # Distributed under the GNU General Public License v3. See LICENSE for info.
 """Async ModBus python library"""
+import functools
 import inspect
 import urllib.parse
 
@@ -87,6 +88,8 @@ class _Stream:
     Make sure we have a nice and clean Reader/Writer API compatible with
     asyncio. This makes using curio's `socket.from_stream()` or sockio's TCP()
     straight forward.
+
+    This adapter also supports Trio and AnyIO streams.
     """
 
     def __init__(self, stream):
@@ -98,16 +101,37 @@ class _Stream:
             self.readexactly = self.reader.read_exactly
         elif hasattr(self.reader, "readexactly"):
             self.readexactly = self.reader.readexactly
+        elif hasattr(self.reader, "receive_exactly"):
+            self.readexactly = self.reader.receive_exactly
+        elif hasattr(self.reader, "receive_some"):  # trio
+            async def receive_exactly(stream, length):
+                res = bytearray()
+                while len(res) < length:
+                    res += await stream.receive_some(length - len(res))
+                return res
+            self.readexactly = functools.partial(receive_exactly, self.reader)
+        elif hasattr(self.reader, "receive"):  # anyio
+            from anyio.streams.buffered import BufferedByteReceiveStream
+            self.readexactly = BufferedByteReceiveStream(self.reader).receive_exactly
         else:
             self.readexactly = self.reader.read
-        if not inspect.iscoroutinefunction(self.writer.write):
+
+        if hasattr(self.writer, "send"):  # anyio
+            write = self.writer.send
+        elif hasattr(self.writer, "send_all"):  # trio
+            write = self.writer.send_all
+        elif inspect.iscoroutinefunction(self.writer.write):
             write = self.writer.write
         else:
             async def write(data):
                 self.writer.write(data)
                 await self.writer.drain()
         self.write = write
-        self.close = self.writer.close
+
+        if hasattr(self.writer,"aclose"):
+            self.close = self.writer.aclose
+        else:
+            self.close = self.writer.close
 
 
 class AsyncClient:
