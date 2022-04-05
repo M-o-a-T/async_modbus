@@ -9,25 +9,11 @@ Homepage: https://github.com/tiagocoutinho/async_modbus
 Package: python3-async-modbus
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}
+Recommends: python3-anyio, python3-trio
 Description: Async ModBus python library
- # Async ModBus
- .
- [![Async Modbus][pypi-version]](https://pypi.python.org/pypi/async_modbus)
- [![Python Versions][pypi-python-versions]](https://pypi.python.org/pypi/async_modbus)
- [![CI Status][CI]](https://github.com/tiagocoutinho/async_modbus/actions/workflows/ci.yml)
- ![License][license]
- [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
- .
- .
- Asynchronous (as in python async/await) modbus python 3 client library.
- A thin layer on on top of the venerable
- [umodbus](https://github.com/AdvancedClimateSystems/uModbus) library providing
- an object oriented client API.
+ A thin layer on on top of the umodbus library providing an object oriented
+ client API.
  .
  async_modbus is async library agnostic. You should be able to use it with
- [asyncio](https://docs.python.org/3/library/asyncio.html),
- [curio](https://curio.rtfd.io), [trio](https://trio.rtfd.io) or
- [anyio](https://anyio.rtfd.io).
- .
- It expects an object with the same interface as
+ asyncio, curio, trio, or anyio.
 
